@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Feedback Ledger — Submit</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sheet">
+    <div class="letterhead">
+      <div>
+        <h1>Feedback Ledger</h1>
+        <p>Department of Information Technology · Course Entry Form</p>
+      </div>
+      <div class="seal">DEPT<br>OF&nbsp;IT</div>
+    </div>
+
+    <form id="feedbackForm">
+      <div class="field">
+        <label>Student name</label>
+        <input type="text" id="studentName" required>
+      </div>
+
+      <div class="field">
+        <label>Register number</label>
+        <input type="text" id="registerNo" required>
+      </div>
+
+      <div class="field">
+        <label>Department</label>
+        <input type="text" id="department" required>
+      </div>
+
+      <div class="field">
+        <label>Course name</label>
+        <input type="text" id="course" required>
+      </div>
+
+      <div class="field">
+        <label>Faculty name</label>
+        <input type="text" id="faculty" required>
+      </div>
+
+      <div class="field">
+        <label>Rating — 1 (poor) to 5 (excellent)</label>
+        <input type="number" id="rating" min="1" max="5" required>
+      </div>
+
+      <div class="field">
+        <label>Comments</label>
+        <textarea id="comments" rows="3"></textarea>
+      </div>
+
+      <button type="submit">Enter into ledger</button>
+      <p class="msg" id="msg"></p>
+    </form>
+
+    <a class="footlink" href="admin.html">View the full ledger →</a>
+  </div>
+
+  <script>
+    document.getElementById("feedbackForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = {
+        studentName: document.getElementById("studentName").value,
+        registerNo: document.getElementById("registerNo").value,
+        department: document.getElementById("department").value,
+        course: document.getElementById("course").value,
+        faculty: document.getElementById("faculty").value,
+        rating: Number(document.getElementById("rating").value),
+        comments: document.getElementById("comments").value
+      };
+
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      const msg = document.getElementById("msg");
+      msg.textContent = result.message || result.error;
+      msg.style.color = result.message ? "var(--approve)" : "var(--pen-red)";
+      if (result.message) e.target.reset();
+    });
+  </script>
+</body>
+</html>

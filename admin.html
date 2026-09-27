@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Feedback Ledger — Register</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sheet sheet--wide">
+    <div class="letterhead">
+      <div>
+        <h1>The Register</h1>
+        <p>All submitted course feedback, entered chronologically</p>
+      </div>
+      <div class="seal">DEPT<br>OF&nbsp;IT</div>
+    </div>
+
+    <div class="filters">
+      <div class="field">
+        <label>Search by register no.</label>
+        <input type="text" id="searchReg" placeholder="e.g. 23CSE101">
+      </div>
+      <div class="field">
+        <label>Filter by course</label>
+        <input type="text" id="filterCourse" placeholder="e.g. Web Technology">
+      </div>
+      <button onclick="loadFeedback()">Search</button>
+      <button onclick="clearFilters()" style="background:transparent;color:var(--ink-soft);border:1px solid var(--ink-soft);">Clear</button>
+    </div>
+
+    <div class="filters" style="margin-top:0;">
+      <div class="field">
+        <label>Average rating for faculty</label>
+        <input type="text" id="avgFaculty" placeholder="e.g. Dr. Kumar">
+      </div>
+      <button onclick="getAverage()">Calculate</button>
+      <p class="stamp-result" id="avgResult"></p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Register No.</th>
+          <th>Course</th>
+          <th>Faculty</th>
+          <th>Rating</th>
+          <th>Comments</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="feedbackTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    function renderStars(rating) {
+      let html = '<span class="rating-marks">';
+      for (let i = 1; i <= 5; i++) {
+        html += `<span class="${i <= rating ? "filled" : ""}"></span>`;
+      }
+      html += "</span>";
+      return html;
+    }
+
+    async function loadFeedback() {
+      const registerNo = document.getElementById("searchReg").value;
+      const course = document.getElementById("filterCourse").value;
+
+      const params = new URLSearchParams();
+      if (registerNo) params.append("registerNo", registerNo);
+      if (course) params.append("course", course);
+
+      const res = await fetch("/api/feedback?" + params.toString());
+      const data = await res.json();
+
+      const tbody = document.getElementById("feedbackTable");
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--ink-soft);">No entries in the ledger yet.</td></tr>';
+        return;
+      }
+
+      data.forEach((fb) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${fb.studentName}</td>
+          <td>${fb.registerNo}</td>
+          <td>${fb.course}</td>
+          <td>${fb.faculty}</td>
+          <td>${renderStars(fb.rating)}</td>
+          <td>${fb.comments || "—"}</td>
+          <td><button class="strike-btn" onclick="deleteFeedback('${fb._id}')">delete</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function clearFilters() {
+      document.getElementById("searchReg").value = "";
+      document.getElementById("filterCourse").value = "";
+      loadFeedback();
+    }
+
+    async function deleteFeedback(id) {
+      await fetch("/api/feedback/" + id, { method: "DELETE" });
+      loadFeedback();
+    }
+
+    async function getAverage() {
+      const faculty = document.getElementById("avgFaculty").value;
+      if (!faculty) return;
+
+      const res = await fetch("/api/feedback/average/" + encodeURIComponent(faculty));
+      const data = await res.json();
+      const val = data.avgRating ? data.avgRating.toFixed(1) : "—";
+      document.getElementById("avgResult").innerHTML =
+        `for ${faculty} <span class="value">${val}</span>`;
+    }
+
+    loadFeedback();
+  </script>
+</body>
+</html>
